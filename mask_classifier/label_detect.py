@@ -24,7 +24,7 @@ import glob
 import cv2
 
 
-filepath = r"C:\Users\aiforesee\Documents\GitHub\observations\mask_classifier\mask1_model.pth"
+filepath = r"C:\Users\aiforesee\Google Drive (bimapriambodowr@gmail.com)\Digital Rise Indonesia\Object Detection\Masker Detection - Resnet\mask_classifier\mask1_model.pth"
 model = torch.load(filepath)
 
 

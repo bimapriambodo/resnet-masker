@@ -1,23 +1,24 @@
 import cv2
 import os
-# from keras.models import load_model
 import numpy as np
 from pygame import mixer
 import time
 from label_detect import classify_face
 from mtcnn.mtcnn import MTCNN
+import time
 
 color_dict={0:(0,0,255),1:(0,255,0)}
 mixer.init()
 sound = mixer.Sound('alarms.wav')
 
-size = 5
+size = 10
 face = cv2.CascadeClassifier(r"C:\Users\aiforesee\Documents\GitHub\observations\haarcascade_frontalface_default.xml")
 detector = MTCNN()
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 font = cv2.FONT_HERSHEY_COMPLEX_SMALL
 score=0
 thicc=2
+counter = 0
 
 while(True):
     ret, frame = cap.read()
@@ -43,10 +44,16 @@ while(True):
     if(label == 'with_mask'):
         a=1
         print("No Beep")
+        counter = counter + 1
+        if counter == 35:
+            break
+
     elif(label == 'without_mask'):
         a=0
+        counter = 0
         sound.play()
         print("Beep")
+
     else:
         pass
 
@@ -71,3 +78,6 @@ while(True):
         break
 cap.release()
 cv2.destroyAllWindows()
+
+if __name__ == '__main__':
+    print("the label is", label)
