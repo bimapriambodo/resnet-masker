@@ -70,14 +70,14 @@ def classify_face(image):
     model.eval()
     model.cpu()
     output = model(image)
-    print(output,'##############output###########')
+    # print(output,'##############output###########')
     _, predicted = torch.max(output, 1)
-    print(predicted.data[0],"predicted")
+    # print(predicted.data[0],"predicted")
 
 
     classification1 = predicted.data[0]
     index = int(classification1)
-    print(class_names[index])
+    # print(class_names[index])
     return class_names[index]
 
 
