@@ -26,7 +26,7 @@ l.config(font=("Courier", 15))
 l.pack()
 
 def recog_lbph_btn_load():
-    os.system('python webcam_detect.py')
+    os.system('python fix_play.py')
 
 recogL_btn = Button(root,text="Ok", command=recog_lbph_btn_load)
 recogL_btn.pack()
