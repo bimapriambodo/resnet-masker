@@ -15,12 +15,14 @@ import imutils
 import time
 import cv2
 import os
+import random
 
 
 color_dict={0:(0,0,255),1:(0,255,0)}
 font = cv2.FONT_HERSHEY_COMPLEX_SMALL
 mixer.init()
 sound = mixer.Sound('alarms.wav')
+cam_sound = mixer.Sound('camera.wav')
 counter = 0
 
 def detect_and_predict_mask(frame, faceNet):
@@ -68,7 +70,7 @@ def detect_and_predict_mask(frame, faceNet):
     except:
         pass
                     
-    return (locs) #preds
+    return (locs, faces) #preds
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
@@ -94,36 +96,79 @@ print("[INFO] starting video stream...")
 
 vs = VideoStream(src=0).start()
 time.sleep(2.0)
+dummy = 0
 
 while True:
     frame = vs.read()
     frame = imutils.resize(frame, width=480)
-    locs = detect_and_predict_mask(frame, faceNet) #preds
+    (locs, faces) = detect_and_predict_mask(frame, faceNet) #preds
     label = classify_face(frame)
-    if (label=='with_mask'):
-        a=1
-        print("No Beep")
-        counter = counter + 1
-        if counter == 35:
-            break
-    elif (label == 'without_mask'):
-        a=0
-        counter = 0
-        sound.play()
-        print("Beep")
-    else:
+    dummy = 36
+    dummy_2 = str(dummy) + " Degree C"
+    try:
+        if label == 'with_mask':
+            label_2 = 0
+        elif label == 'without_mask':
+            label_2 = 1
+        else:
+            pass
+
+        if (label_2== 0 & dummy < 37 & len(faces) >0 ):
+            a=1
+            print("No Beep")
+        
+        elif (label_2== 0 & dummy > 37 & len(faces) >0 ):
+            a=0
+            sound.play()
+            print("Beep")
+
+        elif (label_2 == 1 & len(faces) >0):
+            a=0
+            sound.play()
+            print("Beep")
+
+        else:
+            a=0
+        #draw boundary
+        for box in locs: #pred, preds
+            (startX, startY, endX, endY) = box
+            # (x, y, width, height)
+
+            cv2.putText(frame, str(label), (startX, startY - 10), font, 0.8, (255,255,255), 2)
+            cv2.putText(frame, str(dummy_2), (startX, startY - 50), font, 1, (0,0,0), 4)
+            cv2.putText(frame, str(dummy_2), (startX, startY - 50), font, 1, (255,255,255), 1)
+            cv2.rectangle(frame, (startX, startY), (endX, endY), color_dict[a], 2)
+            cv2.rectangle(frame, (startX, startY-40), (endX, endY), color_dict[a], 2)
+
+        #draw rectangle
+        cv2.rectangle(frame, (155, 38), (335, 308), (255,255,255), 2)
+        cv2.putText(frame,str(label),(100,480-20), font, 1,(255,255,255),1,cv2.LINE_AA)
+        cv2.imshow("Frame", frame)
+        # save label
+        if a==1 :
+            maxFrames = 10
+            cpt = 0
+            while cpt < maxFrames:
+                cpt = cpt+1
+                if cpt == 9:
+                    path = r"C:\Users\aiforesee\Google Drive (bimapriambodowr@gmail.com)\Digital Rise Indonesia\Object Detection\Masker Detection - Resnet\mask_classifier\database"
+                    time.sleep(0.5)
+                    cv2.imwrite(os.path.join(path , 'pic{:}.jpg'.format(cpt)),frame)
+                    cam_sound.play()
+                    time.sleep(0.5)
+                    break
+        elif len(faces)<1:
+            maxFrames = 0
+            cpt = 0
+            a=0
+        else:
+            pass
+    except:
         pass
-
-    for box in locs: #pred, preds
-        (startX, startY, endX, endY) = box
-        # (x, y, width, height)
-
-        cv2.putText(frame, str(label), (startX, startY - 10), font, 0.5, (255,255,255), 2)
-        cv2.rectangle(frame, (startX, startY), (endX, endY), color_dict[a], 2)
-        cv2.rectangle(frame, (startX, startY-40), (endX, endY), color_dict[a], 2)
-
     # show the output frame
     cv2.imshow("Frame", frame)
+    print(label)
+
     key = cv2.waitKey(1) & 0xFF
 	# if the `q` key was pressed, break from the loop
     if key == ord("q"):
