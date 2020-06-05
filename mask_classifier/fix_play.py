@@ -58,19 +58,20 @@ def detect_and_predict_mask(frame, faceNet):
                     # extract the face ROI, convert it from BGR to RGB channel
                     # ordering, resize it to 224x224, and preprocess it
                 face = frame[startY:endY, startX:endX]
-                face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
-                face = cv2.resize(face, (224, 224))
-                face = img_to_array(face)
-                face = preprocess_input(face)
-                face = np.expand_dims(face, axis=0)
+
+                face_2 = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
+                face_2 = cv2.resize(face, (224, 224))
+                face_2 = img_to_array(face)
+                face_2 = preprocess_input(face)
+                face_2 = np.expand_dims(face, axis=0)
                     # add the face and bounding boxes to their respective
                     # lists
-                faces.append(face)
+                faces.append(face_2)
                 locs.append((startX, startY, endX, endY))
     except:
         pass
                     
-    return (locs, faces) #preds
+    return (locs, faces, face) #preds
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
@@ -95,17 +96,24 @@ faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 print("[INFO] starting video stream...")
 
 vs = VideoStream(src=0).start()
+# cap = cv2.VideoCapture(1)
 time.sleep(2.0)
 dummy = 0
 
 while True:
-    frame = vs.read()
-    frame = imutils.resize(frame, width=480)
-    (locs, faces) = detect_and_predict_mask(frame, faceNet) #preds
-    label = classify_face(frame)
-    dummy = 36
-    dummy_2 = str(dummy) + " Degree C"
+    x = vs.read()
+    # ret, frame = cap.read()
+    x = imutils.resize(x, width=480)
+    cv2.rectangle(x, (155, 38), (335, 308), (255,255,255), 2)
+    # cv.rec x1,y1 x2,y2
+
     try:
+        # roi y1:y2, x1:x2
+        frame = x[38:308, 155:335] #ROI
+        (locs, faces, face) = detect_and_predict_mask(frame, faceNet) #preds
+        label = classify_face(frame)
+        dummy = 36
+        dummy_2 = str(dummy) + " Degree C"
         if label == 'with_mask':
             label_2 = 0
         elif label == 'without_mask':
@@ -141,16 +149,19 @@ while True:
             cv2.rectangle(frame, (startX, startY-40), (endX, endY), color_dict[a], 2)
 
         #draw rectangle
-        cv2.rectangle(frame, (155, 38), (335, 308), (255,255,255), 2)
+        
         cv2.putText(frame,str(label),(100,480-20), font, 1,(255,255,255),1,cv2.LINE_AA)
-        cv2.imshow("Frame", frame)
-        # save label
+        # cv2.imshow("Frame", frame)
+
+        # save pict
         if a==1 :
-            maxFrames = 10
+            maxFrames = 4
             cpt = 0
             while cpt < maxFrames:
                 cpt = cpt+1
-                if cpt == 9:
+                count = str(cpt)
+                time.sleep(0.1)
+                if cpt == 3:
                     path = r"C:\Users\aiforesee\Google Drive (bimapriambodowr@gmail.com)\Digital Rise Indonesia\Object Detection\Masker Detection - Resnet\mask_classifier\database"
                     time.sleep(0.5)
                     cv2.imwrite(os.path.join(path , 'pic{:}.jpg'.format(cpt)),frame)
@@ -166,8 +177,9 @@ while True:
     except:
         pass
     # show the output frame
-    cv2.imshow("Frame", frame)
-    print(label)
+    cv2.imshow("Frame", x)
+    cv2.imshow("ROI", frame)
+    # print(label)
 
     key = cv2.waitKey(1) & 0xFF
 	# if the `q` key was pressed, break from the loop
