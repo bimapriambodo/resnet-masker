@@ -16,7 +16,7 @@ import time
 import cv2
 import os
 import random
-
+import sys
 
 color_dict={0:(0,0,255),1:(0,255,0)}
 font = cv2.FONT_HERSHEY_COMPLEX_SMALL
@@ -46,7 +46,7 @@ def detect_and_predict_mask(frame, faceNet):
             confidence = detections[0, 0, i, 2]
                 # filter out weak detections by ensuring the confidence is
                 # greater than the minimum confidence
-            if confidence > args["confidence"]:
+            if confidence > 0.5:
                     # compute the (x, y)-coordinates of the bounding box for
                     # the object
                 box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
@@ -74,22 +74,26 @@ def detect_and_predict_mask(frame, faceNet):
     return (locs, faces, face) #preds
 
 # construct the argument parser and parse the arguments
-ap = argparse.ArgumentParser()
-ap.add_argument("-f", "--face", type=str,
-	default="face_detector",
-	help="path to face detector model directory")
+# ap = argparse.ArgumentParser()
+# ap.add_argument("-f", "--face", type=str,
+# 	default="face_detector",
+# 	help="path to face detector model directory")
 # ap.add_argument("-m", "--model", type=str,
 # 	default="mask_detector.model",
 # 	help="path to trained face mask detector model")
-ap.add_argument("-c", "--confidence", type=float, default=0.5,
-	help="minimum probability to filter weak detections")
-args = vars(ap.parse_args())
+# ap.add_argument("-c", "--confidence", type=float, default=0.5,
+# 	help="minimum probability to filter weak detections")
+# args = vars(ap.parse_args())
 
 # load our serialized face detector model from disk
-print("[INFO] loading face detector model...")
-prototxtPath = os.path.sep.join([args["face"], "deploy.prototxt"])
-weightsPath = os.path.sep.join([args["face"],
-	"res10_300x300_ssd_iter_140000.caffemodel"])
+# print("[INFO] loading face detector model...")
+# prototxtPath = os.path.sep.join([args["face"], "deploy.prototxt"])
+# weightsPath = os.path.sep.join([args["face"],
+# 	"res10_300x300_ssd_iter_140000.caffemodel"])
+path = r"C:/Users/aiforesee/Google Drive (bimapriambodowr@gmail.com)/Digital Rise Indonesia/Object Detection/Masker Detection - Resnet/mask_classifier/face_detector/"
+
+prototxtPath = os.path.sep.join([path,"deploy.prototxt"])
+weightsPath = os.path.sep.join([path,"res10_300x300_ssd_iter_140000.caffemodel"])
 faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 
 # initialize the video stream and allow the camera sensor to warm up
@@ -99,6 +103,11 @@ vs = VideoStream(src=0).start()
 # cap = cv2.VideoCapture(1)
 time.sleep(2.0)
 dummy = 0
+
+dummy = sys.argv[1]
+dummy = int(dummy)
+print(type(dummy))
+dummy_2 = str(dummy) + " C"
 
 while True:
     x = vs.read()
@@ -112,8 +121,7 @@ while True:
         frame = x[38:308, 155:335] #ROI
         (locs, faces, face) = detect_and_predict_mask(frame, faceNet) #preds
         label = classify_face(frame)
-        dummy = 36
-        dummy_2 = str(dummy) + " Degree C"
+        
         if label == 'with_mask':
             label_2 = 0
         elif label == 'without_mask':
@@ -121,22 +129,33 @@ while True:
         else:
             pass
 
-        if (label_2== 0 & dummy < 37 & len(faces) >0 ):
+        if (label_2== 0 and dummy < 37 and len(faces) >0 ): #MASKER
             a=1
             print("No Beep")
         
-        elif (label_2== 0 & dummy > 37 & len(faces) >0 ):
+        elif (label_2== 0 and dummy > 37 and len(faces) >0 ): #MASKER SUHU TINGGI
             a=0
             sound.play()
             print("Beep")
 
-        elif (label_2 == 1 & len(faces) >0):
+        elif (label_2 == 1 and dummy > 37 and len(faces) >0): #GAK MASKER SUHU TINGGI
+            a=0
+            sound.play()
+            print("Beep")
+
+        elif (label_2 == 1 and dummy < 37 and len(faces) >0): #GAK MASKER SUHU RENDAH
+            a=0
+            sound.play()
+            print("Beep")
+        
+        elif (label_2 == 1  and len(faces) >0): #GAK MASKER 
             a=0
             sound.play()
             print("Beep")
 
         else:
             a=0
+
         #draw boundary
         for box in locs: #pred, preds
             (startX, startY, endX, endY) = box
@@ -147,11 +166,6 @@ while True:
             cv2.putText(frame, str(dummy_2), (startX, startY - 50), font, 1, (255,255,255), 1)
             cv2.rectangle(frame, (startX, startY), (endX, endY), color_dict[a], 2)
             cv2.rectangle(frame, (startX, startY-40), (endX, endY), color_dict[a], 2)
-
-        #draw rectangle
-        
-        cv2.putText(frame,str(label),(100,480-20), font, 1,(255,255,255),1,cv2.LINE_AA)
-        # cv2.imshow("Frame", frame)
 
         # save pict
         if a==1 :
@@ -176,6 +190,7 @@ while True:
             pass
     except:
         pass
+    
     # show the output frame
     cv2.imshow("Frame", x)
     cv2.imshow("ROI", frame)

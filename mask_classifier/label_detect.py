@@ -24,7 +24,7 @@ import glob
 import cv2
 
 
-filepath = r"C:\Users\aiforesee\Google Drive (bimapriambodowr@gmail.com)\Digital Rise Indonesia\Object Detection\Masker Detection - Resnet\mask_classifier\mask3_model.pth"
+filepath = r"C:\Users\aiforesee\Google Drive (bimapriambodowr@gmail.com)\Digital Rise Indonesia\Object Detection\Masker Detection - Resnet\mask_classifier\mask4_model.pth"
 model = torch.load(filepath)
 
 
@@ -71,14 +71,14 @@ def classify_face(image):
     # model.cpu()
     model.cpu()
     output = model(image)
-    # print(output,'##############output###########')
+    print(output,'##############output###########')
     _, predicted = torch.max(output, 1)
-    # print(predicted.data[0],"predicted")
+    print(predicted.data[0],"predicted")
 
 
     classification1 = predicted.data[0]
     index = int(classification1)
-    # print(class_names[index])
+    print(class_names[index])
     return class_names[index]
 
 
