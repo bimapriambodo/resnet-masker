@@ -4,10 +4,17 @@ import numpy as np
 from pygame import mixer
 import time
 from label_detect import classify_face
+import time
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+from tensorflow.keras.preprocessing.image import img_to_array
+from tensorflow.keras.models import load_model
 from imutils.video import VideoStream
 import numpy as np
 import argparse
 import imutils
+import time
+import cv2
+import os
 import random
 import sys
 
@@ -97,13 +104,16 @@ print("[INFO] starting video stream...")
 vs = VideoStream(src=0).start()
 # cap = cv2.VideoCapture(1)
 time.sleep(2.0)
-dummy = 0
-
+# dummy = 0
+dummy = sys.argv[1]
+dummy = int(dummy)
+print(type(dummy))
+dummy_2 = str(dummy) + " C"
 while True:
     x = vs.read()
     # ret, frame = cap.read()
     x = imutils.resize(x, width=480)
-    cv2.rectangle(x, (155, 38), (335, 308), (0,0,0), 2)
+    cv2.rectangle(x, (155, 38), (335, 308), (255,255,255), 2)
     # cv.rec x1,y1 x2,y2
 
     try:
@@ -111,10 +121,8 @@ while True:
         frame = x[38:308, 155:335] #ROI
         (locs, faces, face) = detect_and_predict_mask(frame, faceNet) #preds
         label = classify_face(frame)
-        dummy = sys.argv[1]
-        dummy = int(dummy)
-        print(type(dummyX))
-        dummy_2 = str(dummy) + " C"
+        # dummy = 38
+        # dummy_2 = str(dummy) + " Degree C"
         if label == 'with_mask':
             label_2 = 0
         elif label == 'without_mask':
@@ -122,26 +130,26 @@ while True:
         else:
             pass
 
-        if (label_2== 0 & dummy < 37 & len(faces) >0 ): #MASKER
+        if (label_2== 0 and dummy < 37 and len(faces) >0 ): #MASKER
             a=1
             print("No Beep")
         
-        elif (label_2== 0 & dummy > 37 & len(faces) >0 ): #MASKER SUHU TINGGI
+        elif (label_2== 0 and dummy > 37 and len(faces) >0 ): #MASKER SUHU TINGGI
             a=0
             sound.play()
             print("Beep")
 
-        elif (label_2 == 1 & dummy > 37 & len(faces) >0): #GAK MASKER SUHU TINGGI
+        elif (label_2 == 1 and dummy > 37 and len(faces) >0): #GAK MASKER SUHU TINGGI
             a=0
             sound.play()
             print("Beep")
 
-        elif (label_2 == 1 & dummy < 37 & len(faces) >0): #GAK MASKER SUHU RENDAH
+        elif (label_2 == 1 and dummy < 37 and len(faces) >0): #GAK MASKER SUHU RENDAH
             a=0
             sound.play()
             print("Beep")
         
-        elif (label_2 == 1  & len(faces) >0): #GAK MASKER 
+        elif (label_2 == 1  and len(faces) >0): #GAK MASKER 
             a=0
             sound.play()
             print("Beep")
@@ -149,20 +157,16 @@ while True:
         else:
             a=0
         #draw boundary
-        for box in locs: #pred, preds
+        for (box) in zip(locs): #pred, preds
             (startX, startY, endX, endY) = box
             # (x, y, width, height)
 
             cv2.putText(frame, str(label), (startX, startY - 10), font, 0.8, (255,255,255), 2)
             cv2.putText(frame, str(dummy_2), (startX, startY - 50), font, 1, (0,0,0), 4)
             cv2.putText(frame, str(dummy_2), (startX, startY - 50), font, 1, (255,255,255), 1)
+
             cv2.rectangle(frame, (startX, startY), (endX, endY), color_dict[a], 2)
             cv2.rectangle(frame, (startX, startY-40), (endX, endY), color_dict[a], 2)
-
-        #draw rectangle
-        
-        # cv2.putText(frame,str(label),(100,480-20), font, 1,(255,255,255),1,cv2.LINE_AA)
-        # cv2.imshow("Frame", frame)
 
         # save pict
         if a==1 :
@@ -170,7 +174,6 @@ while True:
             cpt = 0
             while cpt < maxFrames:
                 cpt = cpt+1
-                count = str(cpt)
                 time.sleep(0.1)
                 if cpt == 3:
                     path = r"C:\Users\aiforesee\Google Drive (bimapriambodowr@gmail.com)\Digital Rise Indonesia\Object Detection\Masker Detection - Resnet\mask_classifier\database"

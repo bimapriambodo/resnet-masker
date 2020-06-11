@@ -18,14 +18,7 @@ import os
 import random
 import sys
 
-color_dict={0:(0,0,255),1:(0,255,0)}
-font = cv2.FONT_HERSHEY_COMPLEX_SMALL
-mixer.init()
-sound = mixer.Sound('alarms.wav')
-cam_sound = mixer.Sound('camera.wav')
-counter = 0
-
-def detect_and_predict_mask(frame, faceNet):
+def detect_face(frame, faceNet):
     # grab the dimensions of the frame and then construct a blob
     # from it
     try:
@@ -58,7 +51,6 @@ def detect_and_predict_mask(frame, faceNet):
                     # extract the face ROI, convert it from BGR to RGB channel
                     # ordering, resize it to 224x224, and preprocess it
                 face = frame[startY:endY, startX:endX]
-
                 face_2 = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
                 face_2 = cv2.resize(face, (224, 224))
                 face_2 = img_to_array(face)
@@ -71,25 +63,45 @@ def detect_and_predict_mask(frame, faceNet):
     except:
         pass
                     
-    return (locs, faces, face) #preds
+    return (locs, faces) #preds
 
-# construct the argument parser and parse the arguments
-# ap = argparse.ArgumentParser()
-# ap.add_argument("-f", "--face", type=str,
-# 	default="face_detector",
-# 	help="path to face detector model directory")
-# ap.add_argument("-m", "--model", type=str,
-# 	default="mask_detector.model",
-# 	help="path to trained face mask detector model")
-# ap.add_argument("-c", "--confidence", type=float, default=0.5,
-# 	help="minimum probability to filter weak detections")
-# args = vars(ap.parse_args())
+def logical_conditions(preds, termal, detect_face):
+    if (preds== "with_mask" and termal < 37 and len(detect_face) >0 ): #MASKER
+        flag_conds = True #jadiin boolean agar efisien True False
+        print("No Beep")
+        
+    elif (preds== "with_mask" and termal > 37 and len(detect_face) >0 ): #MASKER SUHU TINGGI
+        flag_conds = False
+        sound.play()
+        print("Beep")
+
+    elif (preds == "without_mask" and termal > 37 and len(detect_face) >0): #GAK MASKER SUHU TINGGI
+        flag_conds = False
+        sound.play()
+        print("Beep")
+
+    elif (preds == "without_mask" and termal < 37 and len(detect_face) >0): #GAK MASKER SUHU RENDAH
+        flag_conds = False
+        sound.play()
+        print("Beep")
+        
+    elif (preds == "without_mask"  and len(detect_face) >0): #GAK MASKER 
+        flag_conds = False
+        sound.play()
+        print("Beep")
+
+    else:
+        flag_conds= False
+
+    return flag_conds
+
+def save_pict(frame):
+    path = r"C:\Users\aiforesee\Google Drive (bimapriambodowr@gmail.com)\Digital Rise Indonesia\Object Detection\Masker Detection - Resnet\mask_classifier\database"
+    cv2.imwrite(os.path.join(path,'data.jpg',frame))
+    cam_sound.play()
 
 # load our serialized face detector model from disk
-# print("[INFO] loading face detector model...")
-# prototxtPath = os.path.sep.join([args["face"], "deploy.prototxt"])
-# weightsPath = os.path.sep.join([args["face"],
-# 	"res10_300x300_ssd_iter_140000.caffemodel"])
+print("[INFO] loading face detector model...")
 path = r"C:/Users/aiforesee/Google Drive (bimapriambodowr@gmail.com)/Digital Rise Indonesia/Object Detection/Masker Detection - Resnet/mask_classifier/face_detector/"
 
 prototxtPath = os.path.sep.join([path,"deploy.prototxt"])
@@ -98,12 +110,19 @@ faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 
 # initialize the video stream and allow the camera sensor to warm up
 print("[INFO] starting video stream...")
-
 vs = VideoStream(src=0).start()
 # cap = cv2.VideoCapture(1)
 time.sleep(2.0)
-dummy = 0
 
+#variable global
+color_dict={False:(0,0,255),True:(0,255,0)}
+font = cv2.FONT_HERSHEY_COMPLEX_SMALL
+mixer.init()
+sound = mixer.Sound('alarms.wav')
+cam_sound = mixer.Sound('camera.wav')
+already_saved = False
+
+# dummy termal
 dummy = sys.argv[1]
 dummy = int(dummy)
 print(type(dummy))
@@ -119,83 +138,41 @@ while True:
     try:
         # roi y1:y2, x1:x2
         frame = x[38:308, 155:335] #ROI
-        (locs, faces, face) = detect_and_predict_mask(frame, faceNet) #preds
-        label = classify_face(frame)
-        
-        if label == 'with_mask':
-            label_2 = 0
-        elif label == 'without_mask':
-            label_2 = 1
-        else:
-            pass
+        #deteksi wajah
+        (locs, faces) = detect_face(frame, faceNet)
+        #jika wajah terdeksi eksekusi scipt
+        if len(faces) > 0 :
+            #jalankan semuanya
+            label = classify_face(frame) #prediksi
+            #logical conditions
+            flag_condition = logical_conditions(label, dummy, faces)
+            print(flag_condition)
+            #draw boundary
+            for box in locs: 
+                (startX, startY, endX, endY) = box
+                # (x, y, width, height)
+                cv2.putText(frame, str(label), (startX, startY - 10), font, 0.8, (255,255,255), 2)
+                cv2.putText(frame, str(dummy_2), (startX, startY - 50), font, 1, (0,0,0), 4)
+                cv2.putText(frame, str(dummy_2), (startX, startY - 50), font, 1, (255,255,255), 1)
+                cv2.rectangle(frame, (startX, startY), (endX, endY), color_dict[flag_condition], 2)
+                cv2.rectangle(frame, (startX, startY-40), (endX, endY), color_dict[flag_condition], 2)
 
-        if (label_2== 0 and dummy < 37 and len(faces) >0 ): #MASKER
-            a=1
-            print("No Beep")
-        
-        elif (label_2== 0 and dummy > 37 and len(faces) >0 ): #MASKER SUHU TINGGI
-            a=0
-            sound.play()
-            print("Beep")
+            # save pict, jika kondisi terpenuhi dan gambar belum disimpan
+            if flag_condition == True and not already_saved: ### INI MASALAH BANGET KOK LOGICNYA GAK PERNAH KE DETECT INI ANEH
+                save_pict(frame)
+                already_saved = True
+                print("gambar tersimpan")
+            
+            print(already_saved)
 
-        elif (label_2 == 1 and dummy > 37 and len(faces) >0): #GAK MASKER SUHU TINGGI
-            a=0
-            sound.play()
-            print("Beep")
-
-        elif (label_2 == 1 and dummy < 37 and len(faces) >0): #GAK MASKER SUHU RENDAH
-            a=0
-            sound.play()
-            print("Beep")
-        
-        elif (label_2 == 1  and len(faces) >0): #GAK MASKER 
-            a=0
-            sound.play()
-            print("Beep")
-
-        else:
-            a=0
-
-        #draw boundary
-        for box in locs: #pred, preds
-            (startX, startY, endX, endY) = box
-            # (x, y, width, height)
-
-            cv2.putText(frame, str(label), (startX, startY - 10), font, 0.8, (255,255,255), 2)
-            cv2.putText(frame, str(dummy_2), (startX, startY - 50), font, 1, (0,0,0), 4)
-            cv2.putText(frame, str(dummy_2), (startX, startY - 50), font, 1, (255,255,255), 1)
-            cv2.rectangle(frame, (startX, startY), (endX, endY), color_dict[a], 2)
-            cv2.rectangle(frame, (startX, startY-40), (endX, endY), color_dict[a], 2)
-
-        # save pict
-        if a==1 :
-            maxFrames = 4
-            cpt = 0
-            while cpt < maxFrames:
-                cpt = cpt+1
-                count = str(cpt)
-                time.sleep(0.1)
-                if cpt == 3:
-                    path = r"C:\Users\aiforesee\Google Drive (bimapriambodowr@gmail.com)\Digital Rise Indonesia\Object Detection\Masker Detection - Resnet\mask_classifier\database"
-                    time.sleep(0.5)
-                    cv2.imwrite(os.path.join(path , 'pic{:}.jpg'.format(cpt)),frame)
-                    cam_sound.play()
-                    time.sleep(0.5)
-                    break
-        elif len(faces)<1:
-            maxFrames = 0
-            cpt = 0
-            a=0
-        else:
-            pass
+        elif len(faces) < 1:
+            already_saved = False            
     except:
         pass
-    
+
     # show the output frame
     cv2.imshow("Frame", x)
     cv2.imshow("ROI", frame)
-    # print(label)
-
     key = cv2.waitKey(1) & 0xFF
 	# if the `q` key was pressed, break from the loop
     if key == ord("q"):
