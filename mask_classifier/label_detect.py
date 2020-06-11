@@ -32,7 +32,6 @@ class_names = ['with_mask',
 ]
 
 
-
 def process_image(image):
     ''' Scales, crops, and normalizes a PIL image for a PyTorch model,
         returns an Numpy array

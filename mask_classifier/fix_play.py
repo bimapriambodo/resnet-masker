@@ -1,10 +1,12 @@
+# import tomopy
+# import mkl
+# mkl.domain_set_num_threads(1, domain='fft') # Intel(R) MKL FFT functions to run sequentially
 import cv2
 import os
 import numpy as np
 from pygame import mixer
 import time
 from label_detect import classify_face
-import time
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.models import load_model
@@ -17,6 +19,9 @@ import cv2
 import os
 import random
 import sys
+import mysql.connector
+from datetime import datetime
+
 
 def detect_face(frame, faceNet):
     # grab the dimensions of the frame and then construct a blob
@@ -31,7 +36,6 @@ def detect_face(frame, faceNet):
         # # and the list of predictions from our face mask network
         faces = []
         locs = []
-        preds = []
         # loop over the detections
         for i in range(0, detections.shape[2]):
                 # extract the confidence (i.e., probability) associated with
@@ -40,16 +44,16 @@ def detect_face(frame, faceNet):
                 # filter out weak detections by ensuring the confidence is
                 # greater than the minimum confidence
             if confidence > 0.5:
-                    # compute the (x, y)-coordinates of the bounding box for
-                    # the object
+                # compute the (x, y)-coordinates of the bounding box for
+                # the object
                 box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
                 (startX, startY, endX, endY) = box.astype("int")
-                    # ensure the bounding boxes fall within the dimensions of
-                    # the frame
+                # ensure the bounding boxes fall within the dimensions of
+                # the frame
                 (startX, startY) = (max(0, startX), max(0, startY))
                 (endX, endY) = (min(w - 1, endX), min(h - 1, endY))
-                    # extract the face ROI, convert it from BGR to RGB channel
-                    # ordering, resize it to 224x224, and preprocess it
+                # extract the face ROI, convert it from BGR to RGB channel
+                # ordering, resize it to 224x224, and preprocess it
                 face = frame[startY:endY, startX:endX]
                 face_2 = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
                 face_2 = cv2.resize(face, (224, 224))
@@ -60,10 +64,10 @@ def detect_face(frame, faceNet):
                     # lists
                 faces.append(face_2)
                 locs.append((startX, startY, endX, endY))
-    except:
-        pass
+    except Exception as e:
+        print(e)
                     
-    return (locs, faces) #preds
+    return (locs, faces) 
 
 def logical_conditions(preds, termal, detect_face):
     if (preds== "with_mask" and termal < 37 and len(detect_face) >0 ): #MASKER
@@ -95,25 +99,38 @@ def logical_conditions(preds, termal, detect_face):
 
     return flag_conds
 
-def save_pict(frame):
+def convertToBinaryData(filename):
+    # Convert digital data to binary format
+    with open(filename, 'rb') as file:
+        binaryData = file.read()
+    return binaryData
+
+def write_db(photo, temp):
+    cursor = db.cursor()
+    sql = "INSERT INTO tb_history (date, photo, temperature) VALUES (%s, %s, %s)"
+    time = datetime.now()
+    empPicture = convertToBinaryData(photo)
+    val = (time, empPicture, temp)
+    cursor.execute(sql, val)
+    db.commit()
+
+def save_pict(frame,temp):
     path = r"C:\Users\aiforesee\Google Drive (bimapriambodowr@gmail.com)\Digital Rise Indonesia\Object Detection\Masker Detection - Resnet\mask_classifier\database"
-    cv2.imwrite(os.path.join(path,'data.jpg',frame))
+    cv2.imwrite(os.path.join(path,'data.jpg'),frame)
+    write_db(r"C:\Users\aiforesee\Google Drive (bimapriambodowr@gmail.com)\Digital Rise Indonesia\Object Detection\Masker Detection - Resnet\mask_classifier\database\data.jpg",temp)
     cam_sound.play()
 
 # load our serialized face detector model from disk
 print("[INFO] loading face detector model...")
 path = r"C:/Users/aiforesee/Google Drive (bimapriambodowr@gmail.com)/Digital Rise Indonesia/Object Detection/Masker Detection - Resnet/mask_classifier/face_detector/"
-
 prototxtPath = os.path.sep.join([path,"deploy.prototxt"])
 weightsPath = os.path.sep.join([path,"res10_300x300_ssd_iter_140000.caffemodel"])
 faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
-
 # initialize the video stream and allow the camera sensor to warm up
 print("[INFO] starting video stream...")
 vs = VideoStream(src=0).start()
 # cap = cv2.VideoCapture(1)
 time.sleep(2.0)
-
 #variable global
 color_dict={False:(0,0,255),True:(0,255,0)}
 font = cv2.FONT_HERSHEY_COMPLEX_SMALL
@@ -121,13 +138,20 @@ mixer.init()
 sound = mixer.Sound('alarms.wav')
 cam_sound = mixer.Sound('camera.wav')
 already_saved = False
-
 # dummy termal
 dummy = sys.argv[1]
 dummy = int(dummy)
 print(type(dummy))
 dummy_2 = str(dummy) + " C"
+#database init
+db = mysql.connector.connect(
+  host="localhost",
+  user="root",
+  passwd="",
+  database="db_mask"
+)
 
+# program real-time
 while True:
     x = vs.read()
     # ret, frame = cap.read()
@@ -146,7 +170,6 @@ while True:
             label = classify_face(frame) #prediksi
             #logical conditions
             flag_condition = logical_conditions(label, dummy, faces)
-            print(flag_condition)
             #draw boundary
             for box in locs: 
                 (startX, startY, endX, endY) = box
@@ -158,17 +181,16 @@ while True:
                 cv2.rectangle(frame, (startX, startY-40), (endX, endY), color_dict[flag_condition], 2)
 
             # save pict, jika kondisi terpenuhi dan gambar belum disimpan
-            if flag_condition == True and not already_saved: ### INI MASALAH BANGET KOK LOGICNYA GAK PERNAH KE DETECT INI ANEH
-                save_pict(frame)
+            if not already_saved and flag_condition == True : 
+                save_pict(frame,dummy)
                 already_saved = True
-                print("gambar tersimpan")
-            
-            print(already_saved)
+                print("Succes Write into DB")
 
         elif len(faces) < 1:
-            already_saved = False            
-    except:
-        pass
+            already_saved = False   
+
+    except Exception as e:
+        print(e)
 
     # show the output frame
     cv2.imshow("Frame", x)
