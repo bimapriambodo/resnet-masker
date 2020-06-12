@@ -64,8 +64,8 @@ def detect_face(frame, faceNet):
                     # lists
                 faces.append(face_2)
                 locs.append((startX, startY, endX, endY))
-    except Exception as e:
-        print(e)
+    except:
+        pass
                     
     return (locs, faces) 
 
@@ -154,6 +154,7 @@ db = mysql.connector.connect(
 # program real-time
 while True:
     x = vs.read()
+    # print(x)
     # ret, frame = cap.read()
     x = imutils.resize(x, width=480)
     cv2.rectangle(x, (155, 38), (335, 308), (255,255,255), 2)
@@ -181,7 +182,7 @@ while True:
                 cv2.rectangle(frame, (startX, startY-40), (endX, endY), color_dict[flag_condition], 2)
 
             # save pict, jika kondisi terpenuhi dan gambar belum disimpan
-            if not already_saved and flag_condition == True : 
+            if not already_saved and flag_condition: 
                 save_pict(frame,dummy)
                 already_saved = True
                 print("Succes Write into DB")
