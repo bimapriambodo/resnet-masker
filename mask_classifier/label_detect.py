@@ -24,7 +24,7 @@ import glob
 import cv2
 
 
-filepath = r"C:\Users\aiforesee\Google Drive (bimapriambodowr@gmail.com)\Digital Rise Indonesia\Object Detection\Masker Detection - Resnet\mask_classifier\mask4_model.pth"
+filepath = r"mask5_model.pth"
 model = torch.load(filepath)
 
 class_names = ['with_mask',
@@ -50,9 +50,6 @@ def process_image(image):
     
     img = image_transforms(pil_image)
     return img
-    
-    
-
 
 def classify_face(image):
     device = torch.device("cuda")
@@ -76,16 +73,9 @@ def classify_face(image):
 
     classification1 = predicted.data[0]
     index = int(classification1)
-    print(class_names[index])
+    # print(class_names[index])
     return class_names[index]
 
-
-
-if __name__ == '__main__':
-    #map_location=torch.device('cpu')
-    image = cv2.imread('praj.jpg')
-    label = classify_face(image)
-    print("the label is", label)
 
 
 

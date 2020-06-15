@@ -1,20 +1,14 @@
-# import tomopy
-# import mkl
-# mkl.domain_set_num_threads(1, domain='fft') # Intel(R) MKL FFT functions to run sequentially
 import cv2
 import os
 import numpy as np
 from pygame import mixer
-import time
 from label_detect import classify_face
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.models import load_model
 from imutils.video import VideoStream
 import numpy as np
-import argparse
 import imutils
-import time
 import cv2
 import os
 import random
@@ -115,14 +109,14 @@ def write_db(photo, temp):
     db.commit()
 
 def save_pict(frame,temp):
-    path = r"C:\Users\aiforesee\Google Drive (bimapriambodowr@gmail.com)\Digital Rise Indonesia\Object Detection\Masker Detection - Resnet\mask_classifier\database"
+    path = r".\database"
     cv2.imwrite(os.path.join(path,'data.jpg'),frame)
-    write_db(r"C:\Users\aiforesee\Google Drive (bimapriambodowr@gmail.com)\Digital Rise Indonesia\Object Detection\Masker Detection - Resnet\mask_classifier\database\data.jpg",temp)
+    write_db(r".\database\data.jpg",temp)
     cam_sound.play()
 
 # load our serialized face detector model from disk
 print("[INFO] loading face detector model...")
-path = r"C:/Users/aiforesee/Google Drive (bimapriambodowr@gmail.com)/Digital Rise Indonesia/Object Detection/Masker Detection - Resnet/mask_classifier/face_detector/"
+path = r"./face_detector/"
 prototxtPath = os.path.sep.join([path,"deploy.prototxt"])
 weightsPath = os.path.sep.join([path,"res10_300x300_ssd_iter_140000.caffemodel"])
 faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
@@ -130,7 +124,6 @@ faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 print("[INFO] starting video stream...")
 vs = VideoStream(src=0).start()
 # cap = cv2.VideoCapture(1)
-time.sleep(2.0)
 #variable global
 color_dict={False:(0,0,255),True:(0,255,0)}
 font = cv2.FONT_HERSHEY_COMPLEX_SMALL
@@ -163,6 +156,7 @@ while True:
     try:
         # roi y1:y2, x1:x2
         frame = x[38:308, 155:335] #ROI
+        # frame = x
         #deteksi wajah
         (locs, faces) = detect_face(frame, faceNet)
         #jika wajah terdeksi eksekusi scipt
@@ -172,12 +166,13 @@ while True:
             #logical conditions
             flag_condition = logical_conditions(label, dummy, faces)
             #draw boundary
-            for box in locs: 
+            for (box,wajah) in zip(locs,faces): 
                 (startX, startY, endX, endY) = box
                 # (x, y, width, height)
                 cv2.putText(frame, str(label), (startX, startY - 10), font, 0.8, (255,255,255), 2)
                 cv2.putText(frame, str(dummy_2), (startX, startY - 50), font, 1, (0,0,0), 4)
                 cv2.putText(frame, str(dummy_2), (startX, startY - 50), font, 1, (255,255,255), 1)
+
                 cv2.rectangle(frame, (startX, startY), (endX, endY), color_dict[flag_condition], 2)
                 cv2.rectangle(frame, (startX, startY-40), (endX, endY), color_dict[flag_condition], 2)
 
