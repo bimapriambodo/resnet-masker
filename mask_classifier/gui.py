@@ -35,7 +35,7 @@ l.pack()
 
 def recog_lbph_btn_load():
     suhu = svalue.get()
-    os.system('python fix_play.py %s'%(suhu))
+    os.system('python nyoba.py %s'%(suhu))
 
 recogL_btn = Button(root,text="Ok", command=recog_lbph_btn_load)
 recogL_btn.pack()
