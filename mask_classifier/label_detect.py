@@ -24,7 +24,7 @@ import glob
 import cv2
 
 
-filepath = r"mask4_model.pth"
+filepath = r"mask6_model.pth"
 model = torch.load(filepath)
 
 class_names = ['with_mask',
