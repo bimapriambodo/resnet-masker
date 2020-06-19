@@ -198,10 +198,10 @@ while True:
                         # draw the Nth second on each frame 
                         # till one second passes  
                         cv2.putText(frame, strSec[nSecond], (startX, startY - 80), font, 2, (0,0,0), 2)
-                        timeElapsed = (endTime - startTime).total_seconds()
+                        timeElapsed = (datetime.now() - startTime).total_seconds()
                         print('timeElapsed: {}'.format(timeElapsed))
 
-                        if timeElapsed >= 0.2:
+                        if timeElapsed >= 0.1:
                             nSecond += 1
                             print('nthSec:{}'.format(nSecond))
                             timeElapsed = 0
