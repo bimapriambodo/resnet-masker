@@ -130,10 +130,11 @@ font = cv2.FONT_HERSHEY_COMPLEX_SMALL
 mixer.init()
 sound = mixer.Sound('alarms.wav')
 cam_sound = mixer.Sound('camera.wav')
+#ini sialisasi program save dan counter
 already_saved = False
 saveCount = 0
 nSecond = 0
-totalSec = 9
+totalSec = 3
 strSec = '987654321'
 keyPressTime = 0.0
 startTime = 0.0
@@ -162,10 +163,12 @@ while True:
     x = imutils.resize(x, width=480)
     cv2.rectangle(x, (155, 38), (335, 308), (255,255,255), 2)
     # cv.rec x1,y1 x2,y2
+    #jika flag_starttime bernilai True maka start kondisi counter
     if not flag_starttime:
         startCounter = True
         startTime = datetime.now()
-        endTime = datetime.now()
+        print("startTime started")
+        # endTime = datetime.now()
     try:
         # roi y1:y2, x1:x2
         frame = x[38:308, 155:335] #ROI
@@ -191,17 +194,18 @@ while True:
 
             # save pict, jika kondisi terpenuhi dan gambar belum disimpan
             if not already_saved and flag_condition:
-
+                #mulai menghitung detik
                 if startCounter:
-
+                    flag_starttime = True #reset flag agar starttime tidak update
                     if nSecond < totalSec: 
                         # draw the Nth second on each frame 
                         # till one second passes  
                         cv2.putText(frame, strSec[nSecond], (startX, startY - 80), font, 2, (0,0,0), 2)
                         timeElapsed = (datetime.now() - startTime).total_seconds()
+                        print('startTime: {}'.format(startTime))
                         print('timeElapsed: {}'.format(timeElapsed))
 
-                        if timeElapsed >= 0.1:
+                        if timeElapsed >= 1:
                             nSecond += 1
                             print('nthSec:{}'.format(nSecond))
                             timeElapsed = 0
@@ -210,7 +214,7 @@ while True:
                     elif nSecond >= totalSec:
                         save_pict(frame,dummy)
                         already_saved = True 
-                        startCounter = True
+                        # startCounter = True
                         # saveCount += 1
                         nSecond = 0 
                         print("Succes Write into DB")

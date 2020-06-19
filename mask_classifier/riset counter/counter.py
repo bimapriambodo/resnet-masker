@@ -42,6 +42,7 @@ while running:
                         lineType = cv2.LINE_AA)
 
             timeElapsed = (datetime.now() - startTime).total_seconds()
+            print('startTime: {}'.format(startTime))
             print('timeElapsed: {}'.format(timeElapsed))
 
             if timeElapsed >= 1:
