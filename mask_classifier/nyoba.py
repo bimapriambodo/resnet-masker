@@ -9,6 +9,7 @@ from tensorflow.keras.models import load_model
 from imutils.video import VideoStream
 import numpy as np
 import imutils
+import serial
 import cv2
 import os
 import random
@@ -143,10 +144,7 @@ startCounter = False
 endCounter = False
 flag_starttime = False
 # dummy termal
-dummy = sys.argv[1]
-dummy = int(dummy)
-print(type(dummy))
-dummy_2 = str(dummy) + " C"
+data_arduino = serial.Serial('COM4', 9600)
 #database init
 db = mysql.connector.connect(
   host="localhost",
@@ -158,8 +156,15 @@ db = mysql.connector.connect(
 # program real-time
 while True:
     x = vs.read()
-    # print(x)
-    # ret, frame = cap.read()
+    myData = (data_arduino.readline().strip())
+    result = (myData.decode('utf-8'))
+    if result == "Setting On...." :
+        dummy = 0
+    else :
+        dummy = result
+    print(type(dummy))
+    dummy = float(dummy)
+    dummy_2 = str(dummy) + " C"
     x = imutils.resize(x, width=480)
     cv2.rectangle(x, (155, 38), (335, 308), (255,255,255), 2)
     # cv.rec x1,y1 x2,y2

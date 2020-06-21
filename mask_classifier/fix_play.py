@@ -9,11 +9,17 @@ from tensorflow.keras.models import load_model
 from imutils.video import VideoStream
 import numpy as np
 import imutils
+import serial
 import cv2
 import os
 import random
 import sys
 import mysql.connector
+import win32api
+try:
+    import pkg_resources.py2_warn
+except ImportError:
+    pass
 from datetime import datetime
 
 
@@ -130,12 +136,20 @@ font = cv2.FONT_HERSHEY_COMPLEX_SMALL
 mixer.init()
 sound = mixer.Sound('alarms.wav')
 cam_sound = mixer.Sound('camera.wav')
+#ini sialisasi program save dan counter
 already_saved = False
+saveCount = 0
+nSecond = 0
+totalSec = 3
+strSec = '321'
+keyPressTime = 0.0
+startTime = 0.0
+timeElapsed = 0.0
+startCounter = False
+endCounter = False
+flag_starttime = False
 # dummy termal
-dummy = sys.argv[1]
-dummy = int(dummy)
-print(type(dummy))
-dummy_2 = str(dummy) + " C"
+# data_arduino = serial.Serial('COM3', 9600)
 #database init
 db = mysql.connector.connect(
   host="localhost",
@@ -144,15 +158,41 @@ db = mysql.connector.connect(
   database="db_mask"
 )
 
+cur = db.cursor()
+cur.execute("SELECT * FROM tb_setting")
+for row in cur.fetchall():
+    serial_port = row[2]
+
+try:
+  data_arduino = serial.Serial(serial_port, 9600)
+
+except serial.serialutil.SerialException:
+#   print ('Serial Port not open, please check your serial port and change from database')
+  win32api.MessageBox(0, 'Serial Port not open, please check your serial port and change from database', 'Error')
+  exit()
+
+
 # program real-time
 while True:
     x = vs.read()
-    # print(x)
-    # ret, frame = cap.read()
+    myData = (data_arduino.readline().strip())
+    result = (myData.decode('utf-8'))
+    if result == "Setting On...." :
+        dummy = 0
+    else :
+        dummy = result
+    print(type(dummy))
+    dummy = float(dummy)
+    dummy_2 = str(dummy) + " C"
     x = imutils.resize(x, width=480)
     cv2.rectangle(x, (155, 38), (335, 308), (255,255,255), 2)
     # cv.rec x1,y1 x2,y2
-
+    #jika flag_starttime bernilai True maka start kondisi counter
+    if not flag_starttime:
+        startCounter = True
+        startTime = datetime.now()
+        print("startTime started")
+        # endTime = datetime.now()
     try:
         # roi y1:y2, x1:x2
         frame = x[38:308, 155:335] #ROI
@@ -177,20 +217,45 @@ while True:
                 cv2.rectangle(frame, (startX, startY-40), (endX, endY), color_dict[flag_condition], 2)
 
             # save pict, jika kondisi terpenuhi dan gambar belum disimpan
-            if not already_saved and flag_condition: 
-                save_pict(frame,dummy)
-                already_saved = True
-                print("Succes Write into DB")
+            if not already_saved and flag_condition:
+                #mulai menghitung detik
+                if startCounter:
+                    flag_starttime = True #reset flag agar starttime tidak update
+                    if nSecond < totalSec: 
+                        # draw the Nth second on each frame 
+                        # till one second passes  
+                        cv2.putText(frame, strSec[nSecond], (startX, startY - 80), font, 2, (0,0,0), 2)
+                        timeElapsed = (datetime.now() - startTime).total_seconds()
+                        print('startTime: {}'.format(startTime))
+                        print('timeElapsed: {}'.format(timeElapsed))
 
+                        if timeElapsed >= 1:
+                            nSecond += 1
+                            print('nthSec:{}'.format(nSecond))
+                            timeElapsed = 0
+                            startTime = datetime.now()
+
+                    elif nSecond >= totalSec:
+                        save_pict(frame,dummy)
+                        already_saved = True 
+                        # startCounter = True
+                        # saveCount += 1
+                        nSecond = 0 
+                        print("Succes Write into DB")
+        
         elif len(faces) < 1:
-            already_saved = False   
+            already_saved = False 
+            startCounter = False 
+            flag_starttime = False 
+        
+        print(nSecond) #debugging
 
     except Exception as e:
         print(e)
 
     # show the output frame
     cv2.imshow("Frame", x)
-    cv2.imshow("ROI", frame)
+    # cv2.imshow("ROI", frame)
     key = cv2.waitKey(1) & 0xFF
 	# if the `q` key was pressed, break from the loop
     if key == ord("q"):
